@@ -1,36 +1,755 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 📦 Caixinha – Controle de Despensa Familiar
 
-## Getting Started
+Uma aplicação web moderna e responsiva para controle de estoque, despensa e lista de compras com suporte offline, previsões inteligentes e interface otimizada para mobile.
 
-First, run the development server:
+> **Controle sua despensa. Nunca jogue dinheiro fora novamente.**
+
+---
+
+## 🌟 Características Principais
+
+- **📱 Progressive Web App (PWA)** – Funciona offline com sincronização automática
+- **📊 Dashboard Inteligente** – Visualização em tempo real de produtos vencidos, baixo estoque e previsões
+- **📷 Scanner de Código de Barras** – Captura de barcodes via câmera (ZXing/ZBar)
+- **🧠 Previsões de Consumo** – Algoritmo ML que previne desperdício
+- **📋 Gerenciamento Completo**:
+  - ➕ Entrada de produtos com lotes
+  - ➖ Saída (uso ou desperdício) com rastreamento
+  - 🔧 Ajustes de estoque
+  - 🛒 Lista de compras integrada
+- **🏠 Categorização Flexível** – Organização por local (Armário, Geladeira, Congelador, Despensa, Outro)
+- **🔍 Busca Inteligente** – Integração com Open Food Facts para dados automáticos
+- **💾 Armazenamento Híbrido** – PostgreSQL + IndexedDB para resiliência
+- **🌐 Responsivo** – Mobile-first, funciona em qualquer dispositivo
+
+---
+
+## 🛠 Stack Tecnológico
+
+| Camada | Tecnologia |
+|--------|-----------|
+| **Frontend** | React 19.2, Next.js 16 (App Router), TypeScript 5 |
+| **Styling** | Tailwind CSS v4, PostCSS |
+| **Backend** | Next.js Server Actions, API Routes |
+| **Banco de Dados** | PostgreSQL 14+, node-postgres (pg 8.20) |
+| **Offline** | IndexedDB (idb 8.0), Service Worker |
+| **ML** | ml-regression 6.3.0 (regressão linear) |
+| **Scanner** | @zxing/library 0.22 (barcode detection) |
+| **DevTools** | ESLint 9, TypeScript 5, Tailwind Config |
+
+---
+
+## 📋 Pré-requisitos
+
+- **Node.js** 18+ e npm/yarn
+- **PostgreSQL** 14+ instalado e rodando
+- Um navegador moderno com suporte a:
+  - Service Workers
+  - IndexedDB
+  - Camera API (opcional, para scanner)
+
+---
+
+## 🚀 Instalação & Setup Rápido
+
+### 1️⃣ Clonar Repositório
+
+```bash
+git clone https://github.com/seu-usuario/caixinha.git
+cd caixinha
+```
+
+### 2️⃣ Instalar Dependências
+
+```bash
+npm install
+```
+
+### 3️⃣ Configurar Banco de Dados
+
+#### Criar banco (primeira vez):
+
+```bash
+# Linux/Mac
+createdb caixinha_db
+psql caixinha_db < db/schema.sql
+
+# Windows (via PostgreSQL Admin ou psql):
+psql -U postgres
+CREATE DATABASE caixinha_db;
+\c caixinha_db
+\i db/schema.sql
+```
+
+#### Carregar dados de teste (opcional):
+
+```bash
+psql caixinha_db < db/testdata.sql
+```
+
+### 4️⃣ Configurar Variáveis de Ambiente
+
+Crie um arquivo `.env.local` na raiz:
+
+```env
+# PostgreSQL Connection String
+DATABASE_URL=postgresql://postgres:password@localhost:5432/caixinha_db
+
+# Ou configure individualmente (se preferir):
+DB_HOST=localhost
+DB_PORT=5432
+DB_USER=postgres
+DB_PASSWORD=seu_password
+DB_NAME=caixinha_db
+```
+
+### 5️⃣ Executar em Desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abra **http://localhost:3000** no navegador. 🎉
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📂 Estrutura do Projeto
 
-## Learn More
+```
+caixinha/
+├── public/
+│   └── sw.js                          # Service Worker (PWA)
+│
+├── src/
+│   ├── app/                           # Next.js App Router
+│   │   ├── actions/                   # Server Actions (data layer)
+│   │   │   ├── dashboard.ts          # Dados do dashboard
+│   │   │   ├── lots.ts               # Gerenciamento de lotes
+│   │   │   ├── products.ts           # Catálogo de produtos
+│   │   │   └── shopping.ts           # Lista de compras
+│   │   │
+│   │   ├── entrada/                   # 📥 Entrada de Produtos
+│   │   │   ├── page.tsx              # Layout da rota
+│   │   │   ├── error.tsx             # Error boundary
+│   │   │   └── EntradaForm.tsx       # Formulário interativo
+│   │   │
+│   │   ├── estoque/                   # 📦 Controle de Estoque
+│   │   │   ├── page.tsx
+│   │   │   ├── EstoqueClient.tsx
+│   │   │   ├── error.tsx
+│   │   │   └── [productId]/          # Detalhes de produto
+│   │   │       ├── page.tsx
+│   │   │       ├── error.tsx
+│   │   │       └── LotActions.tsx    # Ações de lote
+│   │   │
+│   │   ├── lista/                     # 🛒 Lista de Compras
+│   │   │   ├── page.tsx
+│   │   │   ├── ListaClient.tsx
+│   │   │   └── error.tsx
+│   │   │
+│   │   ├── saida/                     # 📤 Saída de Produtos
+│   │   │   ├── page.tsx
+│   │   │   ├── error.tsx
+│   │   │   └── SaidaForm.tsx         # Formulário de saída
+│   │   │
+│   │   ├── layout.tsx                # Root layout com BottomNav
+│   │   ├── page.tsx                  # Dashboard inicial
+│   │   ├── error.tsx                 # Error boundary global
+│   │   ├── globals.css               # Estilos globais
+│   │   └── manifest.ts               # PWA Manifest
+│   │
+│   ├── components/                    # 🎨 Componentes Reutilizáveis
+│   │   ├── AlertCard.tsx             # Card de alertas (vencido, baixo estoque)
+│   │   ├── BarcodeScanner.tsx        # Câmera + scanner
+│   │   ├── BottomNav.tsx             # Navegação inferior
+│   │   ├── Button.tsx                # Botão customizado
+│   │   ├── ErrorBoundary.tsx         # Error boundary genérico
+│   │   ├── LocationPicker.tsx        # Seletor de local
+│   │   ├── NumericInput.tsx          # Input para números
+│   │   ├── ProductSearch.tsx         # Busca de produtos
+│   │   ├── SemaphoreBadge.tsx        # Badge com status (🔴🟡🟢)
+│   │   ├── ServiceWorkerRegister.tsx # Registra SW
+│   │   ├── SplashScreen.tsx          # Tela inicial de carregamento
+│   │   └── UndoToast.tsx             # Toast para desfazer ações
+│   │
+│   └── lib/                           # 🛠 Utilitários & Tipos
+│       ├── db.ts                     # Pool de conexão PostgreSQL
+│       ├── idb.ts                    # IndexedDB (offline queue)
+│       ├── ml.ts                     # Previsões de consumo
+│       ├── products-api.ts           # Open Food Facts API
+│       └── types.ts                  # TypeScript Interfaces
+│
+├── db/
+│   ├── schema.sql                     # Schema PostgreSQL completo
+│   └── testdata.sql                   # Dados para testes
+│
+├── .env.local                         # Variáveis de ambiente (não commit)
+├── .gitignore
+├── next.config.ts                     # Configuração Next.js
+├── tsconfig.json                      # TypeScript config
+├── postcss.config.mjs                 # PostCSS config (Tailwind)
+├── eslint.config.mjs                  # ESLint rules
+├── package.json                       # Dependências & scripts
+└── README.md                          # Este arquivo
 
-To learn more about Next.js, take a look at the following resources:
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🎯 Funcionalidades Detalhadas
 
-## Deploy on Vercel
+### 📊 Dashboard (página inicial)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- **Resumo Visual**:
+  - Total de produtos em estoque
+  - Total de unidades disponíveis
+- **Alertas Inteligentes**:
+  - 🔴 Vencidos (vermelho) – expirar hoje ou antes
+  - 🟡 Vencendo em breve (amarelo) – expirar nos próximos 7 dias
+  - 🔵 Baixo estoque (azul) – menos de 2 unidades
+- **Previsões de Consumo**:
+  - Data estimada de fim baseada em histórico
+  - Ícone de urgência (⚠️ crítico)
+- **Botões de Acesso Rápido**:
+  - ➕ Entrada
+  - 📦 Estoque
+  - 🛒 Lista
+  - 📤 Saída
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### ➕ Entrada de Produtos
+
+1. **Busca**:
+   - Por código de barras (scanner ou digitado)
+   - Por nome de produto
+   - Autocomplete de produtos existentes
+2. **Busca Automática**:
+   - Se não encontrado localmente, busca em Open Food Facts
+   - Importa foto, marca, categoria automaticamente
+3. **Dados do Lote**:
+   - Quantidade
+   - Data de validade (datepicker)
+   - Local de armazenamento (dropdown)
+   - Observações opcionais
+4. **Confirmação**:
+   - Revisa dados antes de confirmar
+   - Salva e volta ao dashboard
+   - Toast de sucesso
+
+### 📦 Controle de Estoque
+
+- **Listagem**:
+  - Filtro por local (Armário, Geladeira, etc.)
+  - Filtro por status (Fechado, Aberto, Acabou)
+  - Ordenação por validade/quantidade
+- **Detalhe de Produto**:
+  - Foto (se disponível)
+  - Nome, marca, código de barras
+  - Todos os lotes com status
+  - Data de entrada e validade
+- **Ações por Lote**:
+  - 📤 Usar (saída com uso)
+  - 🗑️ Desperdiçar (saída com desperdício)
+  - 🔧 Ajustar quantidade
+  - ⚠️ Marcar como expirado
+- **Histórico de Movimentações**:
+  - Todas as entradas/saídas por lote
+  - Tipo e quantidade de cada movimento
+  - Timestamp exato
+
+### 🛒 Lista de Compras
+
+- **Adicionar Itens**:
+  - Pelo catálogo de produtos
+  - Texto livre (item genérico)
+- **Gerenciar Lista**:
+  - Marcar como comprado
+  - Remover item
+  - Limpar lista completa
+- **Integração com Estoque**:
+  - Quando item é comprado e entrada realizada, remove da lista automaticamente
+
+### 📤 Saída de Produtos
+
+- **Tipo de Saída**:
+  - 🍽️ Uso (produto consumido/utilizado)
+  - 🗑️ Desperdício (descartado/vencido)
+  - 🔧 Ajuste (correção de estoque)
+- **Rastreamento**:
+  - Qual lote
+  - Quantidade
+  - Motivo/observação
+  - Timestamp automático
+- **Impacto na Previsão**:
+  - Cada saída atualiza algoritmo ML
+  - Nova previsão gerada em tempo real
+
+---
+
+## 🔧 Desenvolvimento
+
+### Executar em Modo Dev
+
+```bash
+npm run dev
+```
+
+- Hot reload automático
+- Debug no DevTools normalmente
+- PostgreSQL conecta automaticamente
+
+### Build para Produção
+
+```bash
+npm run build
+npm start
+```
+
+### Lint & Type Check
+
+```bash
+npm run lint
+```
+
+Valida:
+- TypeScript (tipos)
+- ESLint (estilo de código)
+- Sem warnings
+
+---
+
+## 📐 Decisões de Projeto
+
+### ✅ Autenticação
+
+**Status:** Não implementada
+
+**Justificativa:** Uso doméstico de uma única casa/família. PIN do dispositivo ou biometria é suficiente.
+
+**Extensão futura:**
+```typescript
+// Para multi-usuário, adicione middleware de sessão:
+// import { getSession } from 'next-session'
+// ou use NextAuth/Supabase Auth
+```
+
+### ✅ Banco de Dados
+
+**PostgreSQL raw SQL** (sem ORM)
+
+**Justificativa:**
+- Controle total sobre queries
+- Performance previsível
+- Pool singleton em [src/lib/db.ts](src/lib/db.ts)
+- Sem overhead de abstração
+
+**Schema Highlights:**
+```sql
+-- Enums para tipo seguro
+CREATE TYPE location_kind AS ENUM ('armario', 'geladeira', 'congelador', 'despensa', 'outro');
+CREATE TYPE lot_status AS ENUM ('fechado', 'aberto', 'acabou');
+CREATE TYPE movement_type AS ENUM ('in', 'out_used', 'out_wasted', 'adjust');
+
+-- Relationships:
+-- products → lots (1:N)
+-- locations (seeds automático)
+-- stock_movements (audit log)
+```
+
+### ✅ Machine Learning
+
+**Regressão Linear Simples** (ml-regression)
+
+**Como funciona:**
+1. Coleta saídas (`out_*`) dos últimos 60 dias
+2. Extrai timestamps → intervalo entre consumos
+3. Treina modelo: y = ax + b (consumo médio por dia)
+4. Predição = data_atual + (quantidade_atual / consumo_diário)
+
+**Requisitos:**
+- Mínimo 3 eventos de saída para treinar
+- Atualiza automaticamente após cada saída
+- Cache em `consumption_predictions` (não precisa recomputar)
+
+**Limitações:**
+- Não detecta sazonalidade
+- Alterações bruscas de padrão levam ~7 dias para ajustar
+- Ideal para produtos de consumo regular
+
+### ✅ PWA & Offline
+
+**Arquitetura:**
+
+```
+┌─────────────────────────────────────┐
+│        Service Worker (SW)          │ ← Caching estático
+│     (public/sw.js)                  │ ← Cache assets
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│    IndexedDB (src/lib/idb.ts)       │ ← Fila de operações
+│    • Escritas offline pendentes     │ ← Sincroniza on-connect
+└─────────────────────────────────────┘
+              ↓
+┌─────────────────────────────────────┐
+│    Server Actions (Next.js)         │ ← Requer rede
+│    • PostgreSQL operations          │ ← Sempre sincroniza
+└─────────────────────────────────────┘
+```
+
+**Status Atual:**
+- ✅ SW caching (leitura offline funciona)
+- ✅ IndexedDB fila de escritas (pronto, não conectado)
+- ⏳ Background Sync (arquitetura pronta, não implementado)
+
+**Para Ativar Background Sync:**
+
+```typescript
+// Em src/components/ServiceWorkerRegister.tsx:
+if ('serviceWorker' in navigator && 'SyncManager' in window) {
+  // Registra fila IndexedDB como background sync
+}
+```
+
+---
+
+## 🧪 Tipos TypeScript
+
+Todos em [src/lib/types.ts](src/lib/types.ts):
+
+```typescript
+export interface Product {
+  id: bigint
+  barcode: string | null
+  name: string
+  brand: string | null
+  image_url: string | null
+  default_category: string | null
+  created_at: Date
+}
+
+export interface Lot {
+  id: bigint
+  product_id: bigint
+  location_id: bigint
+  qty: number
+  status: 'fechado' | 'aberto' | 'acabou'
+  expiry_date: Date | null
+  entered_at: Date
+  opened_at: Date | null
+  finished_at: Date | null
+}
+
+export interface StockMovement {
+  id: bigint
+  lot_id: bigint
+  type: 'in' | 'out_used' | 'out_wasted' | 'adjust'
+  qty: number
+  occurred_at: Date
+  note: string | null
+}
+
+export interface ConsumptionPrediction {
+  lot_id: bigint
+  estimated_end_date: Date
+  daily_consumption: number
+  priority: 'urgente' | 'normal' | 'baixa'
+}
+```
+
+---
+
+## 🚨 Tratamento de Erros
+
+Cada rota possui `error.tsx`:
+
+```
+src/app/
+├── error.tsx              ← Fallback global
+├── entrada/error.tsx      ← Específico de entrada
+├── estoque/error.tsx      ← Específico de estoque
+├── saida/error.tsx        ← Específico de saída
+└── lista/error.tsx        ← Específico de lista
+```
+
+**ErrorBoundary genérico** ([src/components/ErrorBoundary.tsx](src/components/ErrorBoundary.tsx)):
+
+```typescript
+export default function ErrorBoundary({ error, reset }: {
+  error: Error
+  reset: () => void
+}) {
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+      <h2 className="text-red-900 font-bold">Algo deu errado</h2>
+      <p className="text-red-700 text-sm mt-1">{error.message}</p>
+      <button onClick={reset} className="mt-3 bg-red-600 text-white px-3 py-1 rounded">
+        Tentar Novamente
+      </button>
+    </div>
+  )
+}
+```
+
+---
+
+## 📱 PWA Manifest & Installation
+
+**Manifest:** [src/app/manifest.ts](src/app/manifest.ts)
+
+```typescript
+export default {
+  name: 'Caixinha',
+  short_name: 'Caixinha',
+  description: 'Controle de despensa para toda a família',
+  start_url: '/',
+  display: 'standalone',
+  background_color: '#ffffff',
+  theme_color: '#2563eb',
+  icons: [
+    {
+      src: '/icon-192x192.png',
+      sizes: '192x192',
+      type: 'image/png',
+      purpose: 'any',
+    },
+    {
+      src: '/icon-512x512.png',
+      sizes: '512x512',
+      type: 'image/png',
+      purpose: 'maskable',
+    },
+  ],
+}
+```
+
+**Como instalar:**
+- iOS: Safari → Compartilhar → Adicionar à Tela Inicial
+- Android: Menu → Instalar app
+- Desktop: Menu → Instalar
+
+---
+
+## 🔐 Segurança
+
+✅ **Implementado:**
+- Variáveis de ambiente para todas as credenciais
+- Server Actions isolados (sem exposição de DB)
+- Query parameterization (proteção SQL injection)
+- CSRF protection nativa do Next.js
+- Headers de cache corretos (`no-store` para dados)
+
+⚠️ **Recomendações para Produção:**
+- [ ] Adicione autenticação (Supabase, Auth0, etc.)
+- [ ] Rate limiting (middleware)
+- [ ] HTTPS obrigatório (Vercel, Railway, etc.)
+- [ ] Backup automático PostgreSQL
+- [ ] Monitoramento de erros (Sentry)
+- [ ] WAF (Web Application Firewall)
+
+---
+
+## 🐛 Troubleshooting
+
+### ❌ Erro: "Conneção ECONNREFUSED 127.0.0.1:5432"
+
+```
+Error: connect ECONNREFUSED 127.0.0.1:5432
+```
+
+**Solução:**
+```bash
+# Verificar se PostgreSQL está rodando
+psql -U postgres -c "SELECT 1"
+
+# Se não, iniciar:
+# macOS
+brew services start postgresql
+# Linux
+sudo service postgresql start
+# Windows
+net start PostgreSQL14 # (versão pode variar)
+
+# Validar variáveis de ambiente
+echo $DATABASE_URL
+```
+
+### ❌ Erro: "relation 'products' does not exist"
+
+**Solução:**
+```bash
+# Schema não foi executado
+psql caixinha_db < db/schema.sql
+```
+
+### ❌ Service Worker não registra
+
+1. Abrir DevTools → Application → Service Workers
+2. Verificar se `public/sw.js` existe
+3. Validar headers do SW:
+   ```
+   Content-Type: application/javascript
+   Cache-Control: no-cache
+   ```
+4. Em produção, usar HTTPS
+
+### ❌ Scanner de barcode não funciona
+
+- Permitir acesso à câmera no navegador
+- Em produção (HTTPS), usar `https://` explícito
+- ZXing suporta: EAN-13, UPC-A, QR Code, Aztec, PDF417
+
+### ❌ Previsão retorna `null`
+
+- Necessário mínimo 3 eventos de saída para treinar
+- Esperar 7+ dias de histórico para precisão melhor
+- Validar tabela `stock_movements`
+
+---
+
+## 📈 Roadmap & Melhorias Futuras
+
+- [ ] **Autenticação Multi-usuário** (Supabase Auth)
+- [ ] **Sincronização em Tempo Real** (WebSocket/Realtime)
+- [ ] **Notificações Push** (browser notification API)
+- [ ] **Exportação de Relatórios** (PDF, CSV)
+- [ ] **Integração com APIs de Compras** (Amazon, Carrefour)
+- [ ] **Análise de Desperdício** (gráficos por categoria)
+- [ ] **Receitas Sugeridas** (baseada em estoque)
+- [ ] **Compartilhamento de Lista** (com família)
+- [ ] **NFC Integration** (etiquetas NFC em produtos)
+- [ ] **Dark Mode** (tema escuro)
+- [ ] **Internacionalização** (multi-idioma)
+
+---
+
+## 🤝 Contribuindo
+
+1. **Fork** o repositório
+2. **Crie uma branch** (`git checkout -b feature/minha-funcionalidade`)
+3. **Commit** suas mudanças (`git commit -m 'Adiciona minha funcionalidade'`)
+4. **Push** para a branch (`git push origin feature/minha-funcionalidade`)
+5. **Abra um Pull Request**
+
+**Antes de submeter:**
+```bash
+npm run lint          # Sem erros
+npm run build         # Build sucesso
+```
+
+---
+
+## 📄 Licença
+
+MIT © 2026. Veja [LICENSE](LICENSE) para detalhes.
+
+---
+
+## 📧 Contato & Suporte
+
+- 🐛 **Issues:** [GitHub Issues](https://github.com/seu-usuario/caixinha/issues)
+- 💬 **Discussões:** [GitHub Discussions](https://github.com/seu-usuario/caixinha/discussions)
+
+---
+
+## 🙏 Agradecimentos
+
+- [Open Food Facts](https://world.openfoodfacts.org/) – API de dados de produtos
+- [ZXing](https://github.com/zxing/zxing) – Detecção de código de barras
+- [Tailwind CSS](https://tailwindcss.com/) – Styling utilities
+- [Next.js](https://nextjs.org/) – Framework web
+- [PostgreSQL](https://www.postgresql.org/) – Banco de dados robusto
+
+---
+
+<div align="center">
+
+**Desenvolvido com ❤️ para reduzir desperdício e organizar a despensa da família**
+
+*Última atualização: maio 2026*
+
+</div>
+
+```sql
+-- O schema.sql já insere os 5 locais padrão:
+-- Armário, Geladeira, Congelador, Despensa, Outro
+
+-- Para verificar:
+SELECT * FROM locations;
+```
+
+### Ícones PWA
+
+Coloque arquivos `icon-192.png` e `icon-512.png` na pasta `public/` para que o PWA funcione corretamente. Use ferramentas como [realfavicongenerator.net](https://realfavicongenerator.net/).
+
+## Estrutura de arquivos
+
+```
+src/
+  app/
+    actions/           # Server Actions (mutations)
+      dashboard.ts     # Queries para alertas do dashboard
+      lots.ts          # CRUD de lotes + FEFO
+      products.ts      # Busca/criação de produtos + Open Food Facts
+      shopping.ts      # Lista de compras
+    entrada/           # Rota /entrada — registrar entrada
+    estoque/           # Rota /estoque — lista e detalhe
+    lista/             # Rota /lista — lista de compras + WhatsApp
+    saida/             # Rota /saida — registrar saída (FEFO)
+    page.tsx           # Dashboard (/)
+    layout.tsx         # Root layout com BottomNav + SW
+    manifest.ts        # Web App Manifest
+  components/
+    AlertCard.tsx      # Card de alerta com contagem
+    BarcodeScanner.tsx # Scanner via câmera (@zxing/browser)
+    BottomNav.tsx      # Navegação bottom tab
+    Button.tsx         # Botão grande (min 52px, WCAG AA)
+    LocationPicker.tsx # Botões de local (Armário, Geladeira...)
+    NumericInput.tsx   # Input numérico com inputmode="numeric"
+    ProductSearch.tsx  # Busca de produto com autocomplete
+    SemaphoreBadge.tsx # Semáforo de validade (verde/amarelo/vermelho)
+    ServiceWorkerRegister.tsx
+    UndoToast.tsx      # Toast com desfazer (10s)
+  lib/
+    db.ts              # Pool PostgreSQL
+    idb.ts             # Fila offline IndexedDB (idb)
+    ml.ts              # Regressão linear (ml-regression-simple-linear)
+    products-api.ts    # Open Food Facts API
+    types.ts           # Tipos TypeScript
+db/
+  schema.sql           # DDL completo com trigger e views
+public/
+  sw.js                # Service worker
+```
+
+## Funcionalidades implementadas
+
+- Dashboard com alertas (vencendo, vencidos, acabando)
+- Entrada via código de barras (câmera) ou manual
+- Auto-preenchimento via Open Food Facts
+- Lotes com FEFO automático na saída
+- Status por lote: Fechado / Aberto / Acabou
+- Motivo de saída: "Usei tudo" / "Joguei fora"
+- 5 locais predefinidos com ícones
+- Semáforo de validade (colorblind-safe: cor + ícone)
+- Lista de compras + compartilhamento WhatsApp
+- Previsão ML de consumo (regressão linear)
+- PWA com service worker e manifest
+- Undo toast após ações destrutivas (10s)
+- Zerar/corrigir quantidade por lote
+- Inputs numéricos com inputmode="numeric"
+- Tap targets mínimos 44px, fontes maiores que 18px
+- Audio beep no scan de código de barras
+- Fila offline IndexedDB (estrutura pronta)
+
+## Funcionalidades diferidas
+
+- **PIN de acesso**: Não implementado. Arquitetura suporta um middleware simples. Prioridade baixa para uso doméstico único.
+- **Replay automático de offline writes**: A fila IndexedDB está implementada em `src/lib/idb.ts`, mas o replay automático via background sync não foi conectado — Server Actions requerem rede. Extensão possível com um route handler dedicado chamado periodicamente.
+- **Botão "Zerar Local"**: Implementado no action `clearLocation` em `src/app/actions/lots.ts`, mas sem botão na UI — pode ser adicionado ao `/estoque` com filtro por local.
+
+## Build
+
+```bash
+npm run build  # Produção
+npm run dev    # Desenvolvimento (Turbopack)
+```

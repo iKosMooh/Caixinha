@@ -1,26 +1,50 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Base font size ≥18px for elderly users */
+  --font-size-base: 1.125rem;   /* 18px */
+  --font-size-lg:   1.25rem;    /* 20px */
+  --font-size-xl:   1.5rem;     /* 24px */
+  --font-size-2xl:  1.875rem;   /* 30px */
+  --font-size-3xl:  2.25rem;    /* 36px */
+
+  /* Semaphore colors — WCAG AA on white, colorblind-safe */
+  --color-semaphore-ok:       #166534;  /* green-800 */
+  --color-semaphore-ok-bg:    #dcfce7;  /* green-100 */
+  --color-semaphore-warn:     #713f12;  /* yellow-900 */
+  --color-semaphore-warn-bg:  #fef9c3;  /* yellow-100 */
+  --color-semaphore-danger:   #991b1b;  /* red-800 */
+  --color-semaphore-danger-bg:#fee2e2;  /* red-100 */
+
+  /* Touch target utilities */
+  --spacing-tap: 2.75rem;  /* 44px minimum tap target */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Ensure minimum 44px tap targets globally */
+button, a, [role="button"] {
+  min-height: var(--spacing-tap);
+  min-width: var(--spacing-tap);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Focus rings — high contrast for accessibility */
+:focus-visible {
+  outline: 3px solid #2563eb;
+  outline-offset: 2px;
 }
 
+/* iOS safe area bottom padding for bottom nav */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Base body styles */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+}
+
+/* High contrast selection */
+::selection {
+  background: #2563eb;
+  color: white;
 }
