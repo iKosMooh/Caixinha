@@ -529,6 +529,54 @@ export default {
 
 ---
 
+## 📦 Gerar .apk (Android) e .exe (Windows)
+
+O app é uma **PWA completa** — manifest, Service Worker e ícones já estão prontos. Para empacotar como APK/EXE nativo usa-se **TWA via PWABuilder**, sem nenhuma mudança no código.
+
+### Pré-requisito: Deploy em HTTPS
+
+PWABuilder precisa de URL pública com HTTPS. Opção mais rápida: **Vercel**.
+
+```bash
+npm i -g vercel
+vercel
+```
+
+> ⚠️ O banco PostgreSQL precisa estar acessível publicamente (não localhost).  
+> Configure `DATABASE_URL` como variável de ambiente no painel do Vercel.
+
+### Gerar .apk — Android TWA
+
+1. Acesse **[pwabuilder.com](https://www.pwabuilder.com/)**
+2. Cole a URL do deploy (ex: `https://caixinha.vercel.app`)
+3. Clique **Start** → aguarda análise do manifest
+4. Aba **Package** → **Android** → **Generate Package**
+5. Baixa `.apk` pronto para instalar ou submeter na Play Store
+
+### Gerar .exe — Windows MSIX
+
+Mesmo fluxo no PWABuilder:
+
+- Aba **Package** → **Windows** → **Generate Package**
+- Baixa `.msix` — instalável no Windows 10/11
+
+**Alternativa sem instalador:** Edge/Chrome mostram "Instalar aplicativo" automaticamente ao acessar a URL — sem `.exe`, sem PWABuilder.
+
+### Checklist antes de gerar
+
+| Item | Status |
+|---|---|
+| `icon-192.png` em `/public/` | ✅ |
+| `icon-512.png` em `/public/` | ✅ |
+| `manifest.ts` completo | ✅ |
+| `sw.js` registrado | ✅ |
+| Deploy HTTPS | ⬜ fazer |
+| `DATABASE_URL` no servidor | ⬜ configurar |
+
+**Caminho mais rápido:** `vercel` → `pwabuilder.com` → baixar. ~10 minutos.
+
+---
+
 ## 🔐 Segurança
 
 ✅ **Implementado:**

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   getExpiringSoon,
   getExpired,
@@ -162,8 +163,20 @@ export default async function HomePage() {
 
   return (
     <>
-      <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Caixinha</h1>
-      <p className="text-gray-500 text-base mb-6">Controle da sua despensa</p>
+      <div className="flex items-center gap-3 mb-6">
+        <Image
+          src="/logo.png"
+          alt="Caixinha"
+          width={52}
+          height={52}
+          className="drop-shadow-sm"
+          priority
+        />
+        <div>
+          <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Caixinha</h1>
+          <p className="text-gray-500 text-sm">Controle da sua despensa</p>
+        </div>
+      </div>
 
       <div className="space-y-5">
         <SummaryStrip summary={summary} />

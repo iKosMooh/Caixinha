@@ -4,7 +4,8 @@
       "Bash(npm install *)",
       "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\('main',''\\), d.get\\('exports',''\\)\\)\")",
       "Bash(node *)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Test-Path *)"
     ]
   }
 }
