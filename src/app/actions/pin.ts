@@ -1,26 +1,30 @@
 'use server'
 
-import { getEffectivePin, getRuntimeConfig, saveRuntimeConfig } from '@/lib/config'
-
-export async function hasPinConfigured(): Promise<boolean> {
-  return getEffectivePin() !== null
-}
+import { getStoredPin, setStoredPin } from '@/lib/pin'
 
 export async function verifyPin(pin: string): Promise<boolean> {
-  const expected = getEffectivePin()
-  if (!expected) return true // sem PIN = sempre passa
-  return pin === expected
+  const stored = await getStoredPin()
+  if (!stored) return true       // sem PIN configurado = sempre passa
+  return pin === stored
 }
 
 export async function changePin(
   currentPin: string,
   newPin: string
 ): Promise<{ ok: boolean; error?: string }> {
-  const valid = await verifyPin(currentPin)
-  if (!valid) return { ok: false, error: 'PIN atual incorreto' }
-  if (!/^\d{4}$/.test(newPin)) return { ok: false, error: 'Novo PIN deve ter exatamente 4 dígitos' }
+  if (!/^\d{4}$/.test(newPin))
+    return { ok: false, error: 'Novo PIN deve ter exatamente 4 dígitos' }
 
-  const config = getRuntimeConfig()
-  saveRuntimeConfig({ ...config, pin: newPin })
-  return { ok: true }
+  const stored = await getStoredPin()
+
+  // Se já existe PIN, exige o atual
+  if (stored !== null && currentPin !== stored)
+    return { ok: false, error: 'PIN atual incorreto' }
+
+  try {
+    await setStoredPin(newPin)
+    return { ok: true }
+  } catch (err) {
+    return { ok: false, error: (err as Error).message }
+  }
 }

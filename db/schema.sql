@@ -83,6 +83,12 @@ CREATE TABLE IF NOT EXISTS shopping_list (
   checked_at  TIMESTAMPTZ
 );
 
+-- App settings: generic key-value store (used for PIN, etc.)
+CREATE TABLE IF NOT EXISTS app_settings (
+  key   TEXT PRIMARY KEY,
+  value TEXT NOT NULL
+);
+
 -- ML prediction cache: updated by background server action
 CREATE TABLE IF NOT EXISTS consumption_predictions (
   product_id           BIGINT PRIMARY KEY REFERENCES products(id) ON DELETE CASCADE,
@@ -157,7 +163,7 @@ CREATE OR REPLACE VIEW v_low_stock AS
 DO $$
 DECLARE app_user TEXT := current_user;
 BEGIN
-  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE products, locations, lots, stock_movements, shopping_list, consumption_predictions TO %I', app_user);
+  EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE products, locations, lots, stock_movements, shopping_list, consumption_predictions, app_settings TO %I', app_user);
   EXECUTE format('GRANT SELECT ON TABLE v_expiring_soon, v_expired, v_low_stock TO %I', app_user);
   EXECUTE format('GRANT USAGE, SELECT ON SEQUENCE products_id_seq, locations_id_seq, lots_id_seq, stock_movements_id_seq, shopping_list_id_seq TO %I', app_user);
 END $$;
