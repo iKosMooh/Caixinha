@@ -1,5 +1,8 @@
 import { Pool, type QueryResultRow } from 'pg'
-import { getEffectiveDatabaseUrl } from '@/lib/config'
+
+// Supabase fornece POSTGRES_URL via Vercel integration ou dashboard
+// Settings → Database → Connection pooling → Connection string (Transaction mode, porta 6543)
+const CONNECTION_STRING = process.env.POSTGRES_URL
 
 declare global {
   // eslint-disable-next-line no-var
@@ -9,26 +12,28 @@ declare global {
 export function getPool(): Pool {
   if (global.__pgPool) return global.__pgPool
 
-  const url = getEffectiveDatabaseUrl()
-  if (!url) throw new Error('DATABASE_URL não configurado. Acesse /configuracoes para definir.')
+  if (!CONNECTION_STRING) {
+    throw new Error(
+      'POSTGRES_URL não definido. Configure em Supabase → Settings → Database → Connection pooling.'
+    )
+  }
 
   global.__pgPool = new Pool({
-    connectionString: url,
-    max: 10,
-    idleTimeoutMillis: 60_000,
-    connectionTimeoutMillis: 5_000,
-    keepAlive: true,
-    keepAliveInitialDelayMillis: 10_000,
+    connectionString: CONNECTION_STRING,
+    max: 3,                        // serverless: poucos por instância
+    idleTimeoutMillis: 10_000,
+    connectionTimeoutMillis: 10_000,
+    ssl: { rejectUnauthorized: false }, // Supabase exige SSL
   })
 
   global.__pgPool.on('error', (err) => {
     console.error('[pg] pool error:', err.message)
+    global.__pgPool = undefined   // força recriação na próxima chamada
   })
 
   return global.__pgPool
 }
 
-/** Encerra o pool atual e força recriação na próxima chamada */
 export async function resetPool(): Promise<void> {
   if (global.__pgPool) {
     await global.__pgPool.end().catch(() => {})
@@ -53,8 +58,8 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
     return result.rows
   } catch (err) {
     if (isRetryable(err)) {
-      console.warn('[pg] retrying after:', (err as Error).message)
-      const result = await pool.query<T>(sql, params)
+      global.__pgPool = undefined  // pool corrompido → recria
+      const result = await getPool().query<T>(sql, params)
       return result.rows
     }
     throw err
