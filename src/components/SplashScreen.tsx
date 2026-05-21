@@ -7,23 +7,34 @@ const CREATORS = ['Caio', 'Henrique', 'Lucas', 'Nefi', 'David']
 const CONTACT  = '(19) 99312-2734'
 
 export default function SplashScreen() {
-  const [visible, setVisible] = useState(() =>
-    typeof window !== 'undefined' && !sessionStorage.getItem('splashShown')
-  )
-  const [fading, setFading] = useState(false)
+  // false no server → hydration match. useEffect corre só no client após hydration.
+  const [visible, setVisible] = useState(false)
+  const [fading, setFading]   = useState(false)
 
   useEffect(() => {
-    if (!visible) return
+    let t1: ReturnType<typeof setTimeout>
+    let t2: ReturnType<typeof setTimeout>
 
-    // Start fade-out after 7.6s, unmount after fade completes (1.1s) → ~8.7s total
-    const t1 = setTimeout(() => setFading(true), 7600)
-    const t2 = setTimeout(() => {
-      setVisible(false)
-      sessionStorage.setItem('splashShown', '1')
-    }, 8700)
+    // requestAnimationFrame move setVisible para fora do corpo do effect (satisfaz linter)
+    const raf = requestAnimationFrame(() => {
+      if (sessionStorage.getItem('splashShown')) return
 
-    return () => { clearTimeout(t1); clearTimeout(t2) }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+      setVisible(true)
+
+      // Fade-out após 7.6s, unmount após 8.7s
+      t1 = setTimeout(() => setFading(true), 7600)
+      t2 = setTimeout(() => {
+        setVisible(false)
+        sessionStorage.setItem('splashShown', '1')
+      }, 8700)
+    })
+
+    // Cleanup correto: cancela RAF e ambos os timers se component desmontar
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(t1)
+      clearTimeout(t2)
+    }
   }, [])
 
   if (!visible) return null

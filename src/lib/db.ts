@@ -1,4 +1,5 @@
 import { Pool, type QueryResultRow } from 'pg'
+import { getEffectiveDatabaseUrl } from '@/lib/config'
 
 declare global {
   // eslint-disable-next-line no-var
@@ -8,12 +9,11 @@ declare global {
 export function getPool(): Pool {
   if (global.__pgPool) return global.__pgPool
 
-  if (!process.env.DATABASE_URL) {
-    throw new Error('DATABASE_URL env var is not set')
-  }
+  const url = getEffectiveDatabaseUrl()
+  if (!url) throw new Error('DATABASE_URL não configurado. Acesse /configuracoes para definir.')
 
   global.__pgPool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: url,
     max: 10,
     idleTimeoutMillis: 60_000,
     connectionTimeoutMillis: 5_000,
@@ -26,6 +26,14 @@ export function getPool(): Pool {
   })
 
   return global.__pgPool
+}
+
+/** Encerra o pool atual e força recriação na próxima chamada */
+export async function resetPool(): Promise<void> {
+  if (global.__pgPool) {
+    await global.__pgPool.end().catch(() => {})
+    global.__pgPool = undefined
+  }
 }
 
 const RETRYABLE = ['Connection closed', 'ECONNRESET', 'ECONNREFUSED', 'Connection terminated']

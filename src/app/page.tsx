@@ -172,10 +172,17 @@ export default async function HomePage() {
           className="drop-shadow-sm"
           priority
         />
-        <div>
+        <div className="flex-1">
           <h1 className="text-3xl font-extrabold text-gray-900 leading-tight">Caixinha</h1>
           <p className="text-gray-500 text-sm">Controle da sua despensa</p>
         </div>
+        <Link
+          href="/configuracoes"
+          className="text-2xl text-gray-400 hover:text-gray-700 transition-colors p-2"
+          aria-label="Configurações"
+        >
+          ⚙️
+        </Link>
       </div>
 
       <div className="space-y-5">

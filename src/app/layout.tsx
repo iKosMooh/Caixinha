@@ -4,6 +4,8 @@ import './globals.css'
 import BottomNav from '@/components/BottomNav'
 import ServiceWorkerRegister from '@/components/ServiceWorkerRegister'
 import SplashScreen from '@/components/SplashScreen'
+import PinGate from '@/components/PinGate'
+import { getEffectivePin } from '@/lib/config'
 
 const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
@@ -21,10 +23,12 @@ export const viewport: Viewport = {
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const hasPin = getEffectivePin() !== null
   return (
     <html lang="pt-BR" className={geist.variable}>
       <body className="bg-gray-50 text-gray-900 antialiased min-h-screen pb-20">
         <SplashScreen />
+        <PinGate hasPin={hasPin} />
         <ServiceWorkerRegister />
         <main className="mx-auto w-[98%] sm:w-[85%] md:w-[45%] px-4 pt-6">
           {children}
