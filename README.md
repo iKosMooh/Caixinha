@@ -30,19 +30,21 @@ Uma aplicação web moderna e responsiva para controle de estoque, despensa e li
 |--------|-----------|
 | **Frontend** | React 19.2, Next.js 16 (App Router), TypeScript 5 |
 | **Styling** | Tailwind CSS v4, PostCSS |
-| **Backend** | Next.js Server Actions, API Routes |
-| **Banco de Dados** | PostgreSQL 14+, node-postgres (pg 8.20) |
+| **Backend** | Next.js Server Actions |
+| **Banco de Dados** | Supabase (PostgreSQL), node-postgres (pg 8.20) |
+| **Auth DB client** | @supabase/supabase-js, @supabase/ssr |
 | **Offline** | IndexedDB (idb 8.0), Service Worker |
-| **ML** | ml-regression 6.3.0 (regressão linear) |
+| **ML** | ml-regression-simple-linear (regressão linear OLS) |
 | **Scanner** | @zxing/library 0.22 (barcode detection) |
+| **Deploy** | Vercel (serverless) |
 | **DevTools** | ESLint 9, TypeScript 5, Tailwind Config |
 
 ---
 
 ## 📋 Pré-requisitos
 
-- **Node.js** 18+ e npm/yarn
-- **PostgreSQL** 14+ instalado e rodando
+- **Node.js** 18+ e npm
+- Conta **Supabase** (gratuita) — [supabase.com](https://supabase.com)
 - Um navegador moderno com suporte a:
   - Service Workers
   - IndexedDB
@@ -65,42 +67,23 @@ cd caixinha
 npm install
 ```
 
-### 3️⃣ Configurar Banco de Dados
+### 3️⃣ Criar projeto no Supabase
 
-#### Criar banco (primeira vez):
-
-```bash
-# Linux/Mac
-createdb caixinha_db
-psql caixinha_db < db/schema.sql
-
-# Windows (via PostgreSQL Admin ou psql):
-psql -U postgres
-CREATE DATABASE caixinha_db;
-\c caixinha_db
-\i db/schema.sql
-```
-
-#### Carregar dados de teste (opcional):
-
-```bash
-psql caixinha_db < db/testdata.sql
-```
+1. Acesse [supabase.com](https://supabase.com) e crie um projeto
+2. **SQL Editor** → cole o conteúdo de `db/schema.sql` → **Run**
+3. **Settings → Database → Connection pooling** → copie a connection string (Session mode, porta 5432)
 
 ### 4️⃣ Configurar Variáveis de Ambiente
 
-Crie um arquivo `.env.local` na raiz:
+Crie `.env.local` na raiz:
 
 ```env
-# PostgreSQL Connection String
-DATABASE_URL=postgresql://postgres:password@localhost:5432/caixinha_db
+# Supabase → Settings → API
+NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJECT_REF.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_XXXX
 
-# Ou configure individualmente (se preferir):
-DB_HOST=localhost
-DB_PORT=5432
-DB_USER=postgres
-DB_PASSWORD=seu_password
-DB_NAME=caixinha_db
+# Supabase → Settings → Database → Connection pooling (Session, porta 5432)
+POSTGRES_URL=postgresql://postgres.SEU_PROJECT_REF:SUA_SENHA@aws-0-REGION.pooler.supabase.com:5432/postgres
 ```
 
 ### 5️⃣ Executar em Desenvolvimento
@@ -357,7 +340,9 @@ CREATE TYPE movement_type AS ENUM ('in', 'out_used', 'out_wasted', 'adjust');
 
 ### ✅ Machine Learning
 
-**Regressão Linear Simples** (ml-regression)
+> 📄 Documentação completa: **[machine-learning.md](machine-learning.md)**
+
+**Regressão Linear Simples** (ml-regression-simple-linear)
 
 **Como funciona:**
 1. Coleta saídas (`out_*`) dos últimos 60 dias
@@ -542,8 +527,8 @@ npm i -g vercel
 vercel
 ```
 
-> ⚠️ O banco PostgreSQL precisa estar acessível publicamente (não localhost).  
-> Configure `DATABASE_URL` como variável de ambiente no painel do Vercel.
+> ⚠️ Configure as variáveis `POSTGRES_URL`, `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` no painel do Vercel (Settings → Environment Variables).  
+> Use a **Session Pooler** URL do Supabase (porta 5432) — a conexão direta é IPv6 only e não funciona no Vercel.
 
 ### Gerar .apk — Android TWA
 
@@ -571,7 +556,7 @@ Mesmo fluxo no PWABuilder:
 | `manifest.ts` completo | ✅ |
 | `sw.js` registrado | ✅ |
 | Deploy HTTPS | ⬜ fazer |
-| `DATABASE_URL` no servidor | ⬜ configurar |
+| `POSTGRES_URL` (Session Pooler) no Vercel | ⬜ configurar |
 
 **Caminho mais rápido:** `vercel` → `pwabuilder.com` → baixar. ~10 minutos.
 
