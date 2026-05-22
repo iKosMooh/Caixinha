@@ -1,5 +1,6 @@
 import { getShoppingList } from '@/lib/queries'
 import { getExpired, getExpiringSoon, getLowStock } from '../actions/dashboard'
+import { getAllProducts } from '../actions/products'
 import ListaClient from './ListaClient'
 import type { ShoppingItem, SuggestedItem } from '@/lib/types'
 
@@ -7,11 +8,12 @@ export const dynamic = 'force-dynamic'
 export const metadata = { title: 'Lista de Compras — Caixinha' }
 
 export default async function ListaPage() {
-  const [items, expired, expiring, lowStock] = await Promise.all([
+  const [items, expired, expiring, lowStock, products] = await Promise.all([
     getShoppingList(),
     getExpired(),
     getExpiringSoon(),
     getLowStock(),
+    getAllProducts(),
   ])
 
   const inListIds = new Set(
@@ -43,7 +45,7 @@ export default async function ListaPage() {
   return (
     <>
       <h1 className="text-2xl font-bold mb-6">Lista de Compras</h1>
-      <ListaClient initialItems={items} suggestions={suggestions} />
+      <ListaClient initialItems={items} suggestions={suggestions} products={products} />
     </>
   )
 }

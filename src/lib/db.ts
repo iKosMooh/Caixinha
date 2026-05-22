@@ -20,10 +20,11 @@ export function getPool(): Pool {
 
   global.__pgPool = new Pool({
     connectionString: CONNECTION_STRING,
-    max: 3,                        // serverless: poucos por instância
-    idleTimeoutMillis: 10_000,
+    max: 2,                          // serverless: 2 por instância é suficiente
+    idleTimeoutMillis: 5_000,        // libera conexões ociosas rapidamente
     connectionTimeoutMillis: 10_000,
-    ssl: { rejectUnauthorized: false }, // Supabase exige SSL
+    allowExitOnIdle: true,           // pool fecha quando não há queries (dev HMR)
+    ssl: { rejectUnauthorized: false },
   })
 
   global.__pgPool.on('error', (err) => {

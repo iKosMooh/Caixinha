@@ -153,45 +153,61 @@ export default function EstoqueClient({ lots }: { lots: Lot[] }) {
       ) : (
         <div className="space-y-3">
           {filtered.map((g) => (
-            <Link
+            <div
               key={g.productId}
-              href={`/estoque/${g.productId}`}
-              className="block bg-white rounded-2xl border-2 border-gray-200 p-4
-                hover:border-blue-400 transition-colors
-                focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+              className="bg-white rounded-2xl border-2 border-gray-200 overflow-hidden
+                hover:border-blue-400 transition-colors"
             >
-              <div className="flex items-center gap-3 mb-2">
-                {g.image_url && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={g.image_url} alt="" className="w-10 h-10 object-contain rounded" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <p className="font-bold text-lg text-gray-900 truncate">{g.name}</p>
-                  {g.barcode && (
-                    <p className="text-xs text-gray-400 font-mono mt-0.5">{g.barcode}</p>
+              {/* Área principal → detalhe do produto */}
+              <Link
+                href={`/estoque/${g.productId}`}
+                className="block p-4
+                  focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+              >
+                <div className="flex items-center gap-3 mb-2">
+                  {g.image_url && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={g.image_url} alt="" className="w-10 h-10 object-contain rounded" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-bold text-lg text-gray-900 truncate">{g.name}</p>
+                    {g.barcode && (
+                      <p className="text-xs text-gray-400 font-mono mt-0.5">{g.barcode}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1">
+                    <span className="font-bold text-gray-700 text-base">{g.totalQty} un.</span>
+                    {g.hasExpired  && <span className="text-xs font-bold text-red-700    bg-red-100    rounded px-1.5 py-0.5">Vencido</span>}
+                    {g.hasExpiring && !g.hasExpired && <span className="text-xs font-bold text-yellow-800 bg-yellow-100 rounded px-1.5 py-0.5">Vencendo</span>}
+                    {g.isLowStock  && <span className="text-xs font-bold text-blue-700   bg-blue-100   rounded px-1.5 py-0.5">Acabando</span>}
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {g.lots.slice(0, 3).map((lot) => (
+                    <div key={lot.id} className="flex items-center gap-1.5 text-sm">
+                      <span className="text-gray-500">{lot.location_name}</span>
+                      <span className="text-gray-300">·</span>
+                      <span className="font-medium text-gray-700">{statusLabel[lot.status]}</span>
+                      {lot.expiry_date && <SemaphoreBadge expiryDate={lot.expiry_date} />}
+                    </div>
+                  ))}
+                  {g.lots.length > 3 && (
+                    <span className="text-xs text-gray-400">+{g.lots.length - 3} lotes</span>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-bold text-gray-700 text-base">{g.totalQty} un.</span>
-                  {g.hasExpired  && <span className="text-xs font-bold text-red-700    bg-red-100    rounded px-1.5 py-0.5">Vencido</span>}
-                  {g.hasExpiring && !g.hasExpired && <span className="text-xs font-bold text-yellow-800 bg-yellow-100 rounded px-1.5 py-0.5">Vencendo</span>}
-                  {g.isLowStock  && <span className="text-xs font-bold text-blue-700   bg-blue-100   rounded px-1.5 py-0.5">Acabando</span>}
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {g.lots.slice(0, 3).map((lot) => (
-                  <div key={lot.id} className="flex items-center gap-1.5 text-sm">
-                    <span className="text-gray-500">{lot.location_name}</span>
-                    <span className="text-gray-300">·</span>
-                    <span className="font-medium text-gray-700">{statusLabel[lot.status]}</span>
-                    {lot.expiry_date && <SemaphoreBadge expiryDate={lot.expiry_date} />}
-                  </div>
-                ))}
-                {g.lots.length > 3 && (
-                  <span className="text-xs text-gray-400">+{g.lots.length - 3} lotes</span>
-                )}
-              </div>
-            </Link>
+              </Link>
+
+              {/* Rodapé → histórico */}
+              <Link
+                href={`/historico/${g.productId}`}
+                className="flex items-center justify-center gap-2 py-2.5 border-t border-gray-100
+                  text-xs font-semibold text-gray-400 hover:text-blue-600 hover:bg-blue-50
+                  transition-colors focus-visible:ring-4 focus-visible:ring-blue-400 focus-visible:outline-none"
+                aria-label={`Histórico de ${g.name}`}
+              >
+                📋 Ver histórico
+              </Link>
+            </div>
           ))}
         </div>
       )}

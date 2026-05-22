@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { verifyPin } from '@/app/actions/pin'
 
 interface Props {
@@ -10,11 +10,12 @@ interface Props {
 const KEYS = ['1','2','3','4','5','6','7','8','9','','0','⌫']
 
 export default function PinGate({ hasPin }: Props) {
-  const [visible, setVisible]   = useState(false)
-  const [digits, setDigits]     = useState<string[]>([])
-  const [error, setError]       = useState(false)
+  const [visible, setVisible]        = useState(false)
+  const [digits, setDigits]          = useState<string[]>([])
+  const [error, setError]            = useState(false)
   const [isPending, startTransition] = useTransition()
-  const mounted = useRef(true)
+  const mounted  = useRef(true)
+  const pressRef = useRef<(key: string) => void>(() => {})
 
   useEffect(() => {
     mounted.current = true
@@ -30,7 +31,7 @@ export default function PinGate({ hasPin }: Props) {
     return () => cancelAnimationFrame(raf)
   }, [hasPin])
 
-  function press(key: string) {
+  const press = useCallback((key: string) => {
     if (isPending) return
     setError(false)
 
@@ -39,25 +40,41 @@ export default function PinGate({ hasPin }: Props) {
       return
     }
     if (key === '') return
-    if (digits.length >= 4) return
 
-    const next = [...digits, key]
-    setDigits(next)
+    setDigits((prev) => {
+      if (prev.length >= 4) return prev
+      const next = [...prev, key]
 
-    if (next.length === 4) {
-      startTransition(async () => {
-        const ok = await verifyPin(next.join(''))
-        if (!mounted.current) return           // navegou antes de responder
-        if (ok) {
-          sessionStorage.setItem('pinVerified', '1')
-          setVisible(false)
-        } else {
-          setError(true)
-          setDigits([])
-        }
-      })
+      if (next.length === 4) {
+        startTransition(async () => {
+          const ok = await verifyPin(next.join(''))
+          if (!mounted.current) return
+          if (ok) {
+            sessionStorage.setItem('pinVerified', '1')
+            setVisible(false)
+          } else {
+            setError(true)
+            setDigits([])
+          }
+        })
+      }
+      return next
+    })
+  }, [isPending, startTransition])
+
+  // Manter ref sempre atualizada para o listener de teclado
+  useEffect(() => { pressRef.current = press }, [press])
+
+  // Capturar teclado físico — apenas dígitos e Backspace
+  useEffect(() => {
+    if (!visible) return
+    function onKeyDown(e: KeyboardEvent) {
+      if (/^\d$/.test(e.key))    pressRef.current(e.key)
+      else if (e.key === 'Backspace') pressRef.current('⌫')
     }
-  }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [visible])
 
   if (!visible) return null
 

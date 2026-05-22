@@ -1,19 +1,19 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef, useEffect, useCallback } from 'react'
 import {
   addShoppingItem,
   checkShoppingItem,
   removeShoppingItem,
 } from '@/app/actions/shopping'
-import type { ShoppingItem } from '@/lib/types'
-import type { SuggestedItem } from '@/lib/types'
+import type { ShoppingItem, SuggestedItem, Product } from '@/lib/types'
 import Button from '@/components/Button'
 import UndoToast from '@/components/UndoToast'
 
 interface Props {
   initialItems: ShoppingItem[]
-  suggestions: SuggestedItem[]
+  suggestions:  SuggestedItem[]
+  products:     Product[]
 }
 
 const reasonConfig = {
@@ -22,13 +22,66 @@ const reasonConfig = {
   acabando: { label: 'Acabando', classes: 'bg-blue-100   text-blue-800   border-blue-300'   },
 }
 
-export default function ListaClient({ initialItems, suggestions }: Props) {
+export default function ListaClient({ initialItems, suggestions, products }: Props) {
   const [items,    setItems]    = useState(initialItems)
   const [newText,  setNewText]  = useState('')
   const [newQty,   setNewQty]   = useState('1')
   const [removed,  setRemoved]  = useState<ShoppingItem | null>(null)
   const [addedIds, setAddedIds] = useState<Set<number>>(new Set())
   const [isPending, startTransition] = useTransition()
+
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [showDropdown,    setShowDropdown]    = useState(false)
+  const [activeIndex,     setActiveIndex]     = useState(-1)
+  const inputWrapRef = useRef<HTMLDivElement>(null)
+
+  const filtered = selectedProduct
+    ? []
+    : products.filter((p) =>
+        newText.trim().length > 0 &&
+        p.name.toLowerCase().includes(newText.trim().toLowerCase())
+      ).slice(0, 8)
+
+  // close on outside click
+  useEffect(() => {
+    function onPointer(e: PointerEvent) {
+      if (inputWrapRef.current && !inputWrapRef.current.contains(e.target as Node)) {
+        setShowDropdown(false)
+      }
+    }
+    document.addEventListener('pointerdown', onPointer)
+    return () => document.removeEventListener('pointerdown', onPointer)
+  }, [])
+
+  function handleTextChange(val: string) {
+    setNewText(val)
+    setSelectedProduct(null)
+    setActiveIndex(-1)
+    setShowDropdown(val.trim().length > 0)
+  }
+
+  const selectProduct = useCallback((p: Product) => {
+    setSelectedProduct(p)
+    setNewText(p.name)
+    setShowDropdown(false)
+    setActiveIndex(-1)
+  }, [])
+
+  function handleInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (!showDropdown || filtered.length === 0) return
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setActiveIndex((i) => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault()
+      selectProduct(filtered[activeIndex])
+    } else if (e.key === 'Escape') {
+      setShowDropdown(false)
+    }
+  }
 
   function buildWhatsAppLink(list: ShoppingItem[]): string {
     const lines = list.map((i) => `- ${i.qty}x ${i.product_name ?? i.free_text ?? 'Item'}`)
@@ -63,12 +116,19 @@ export default function ListaClient({ initialItems, suggestions }: Props) {
     if (!newText.trim()) return
     startTransition(async () => {
       const fd = new FormData()
-      fd.set('free_text', newText)
+      if (selectedProduct) {
+        fd.set('product_id', String(selectedProduct.id))
+      } else {
+        fd.set('free_text', newText)
+      }
       fd.set('qty', newQty || '1')
       const res = await addShoppingItem(fd)
       if (res.ok) {
-        setItems((prev) => [...prev, res.data])
-        setNewText(''); setNewQty('1')
+        const enriched = selectedProduct
+          ? { ...res.data, product_name: selectedProduct.name }
+          : res.data
+        setItems((prev) => [...prev, enriched])
+        setNewText(''); setNewQty('1'); setSelectedProduct(null)
       }
     })
   }
@@ -146,15 +206,50 @@ export default function ListaClient({ initialItems, suggestions }: Props) {
       <section aria-label="Adicionar item">
         <h2 className="text-lg font-bold text-gray-700 mb-3">Adicionar item</h2>
         <form onSubmit={handleAdd} className="flex gap-2">
-          <input
-            type="text"
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-            placeholder="Qualquer item, ex: Sabão em pó..."
-            className="flex-1 min-h-[52px] rounded-xl border-2 border-gray-300 px-4 py-2 text-lg
-              focus:border-blue-500 focus:outline-none"
-            aria-label="Nome do item"
-          />
+          <div ref={inputWrapRef} className="relative flex-1">
+            <input
+              type="text"
+              value={newText}
+              onChange={(e) => handleTextChange(e.target.value)}
+              onFocus={() => { if (newText.trim() && !selectedProduct) setShowDropdown(true) }}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Qualquer item, ex: Sabão em pó..."
+              className="w-full min-h-[52px] rounded-xl border-2 border-gray-300 px-4 py-2 text-lg
+                focus:border-blue-500 focus:outline-none"
+              aria-label="Nome do item"
+              aria-autocomplete="list"
+              aria-expanded={showDropdown}
+              autoComplete="off"
+            />
+            {showDropdown && filtered.length > 0 && (
+              <ul
+                role="listbox"
+                className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border-2
+                  border-blue-300 rounded-xl shadow-lg overflow-hidden"
+              >
+                {filtered.map((p, idx) => (
+                  <li
+                    key={p.id}
+                    role="option"
+                    aria-selected={idx === activeIndex}
+                    onPointerDown={(e) => { e.preventDefault(); selectProduct(p) }}
+                    className={`flex items-center gap-2 px-4 py-3 cursor-pointer text-base
+                      ${idx === activeIndex ? 'bg-blue-50 text-blue-900' : 'hover:bg-gray-50 text-gray-800'}
+                      ${idx > 0 ? 'border-t border-gray-100' : ''}`}
+                  >
+                    {p.image_url && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.image_url} alt="" className="w-7 h-7 object-contain rounded flex-shrink-0" />
+                    )}
+                    <span className="flex-1 truncate font-medium">{p.name}</span>
+                    {p.brand && (
+                      <span className="text-xs text-gray-400 flex-shrink-0">{p.brand}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
           <input
             type="text"
             inputMode="numeric"
@@ -207,12 +302,21 @@ export default function ListaClient({ initialItems, suggestions }: Props) {
                 <button
                   type="button"
                   onClick={() => handleCheck(item)}
-                  className="w-8 h-8 rounded-full border-2 border-gray-400 flex-shrink-0
-                    flex items-center justify-center
-                    hover:border-green-500 hover:bg-green-50 transition-colors
+                  className="group w-10 h-10 rounded-full border-2 border-gray-300 flex-shrink-0
+                    flex items-center justify-center bg-white
+                    hover:border-green-500 hover:bg-green-500 active:scale-95
+                    transition-all duration-150
                     focus-visible:ring-4 focus-visible:ring-green-400 focus-visible:outline-none"
                   aria-label={`Marcar "${item.product_name ?? item.free_text}" como comprado`}
-                />
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-300 group-hover:text-white transition-colors duration-150"
+                    viewBox="0 0 16 16" fill="none" stroke="currentColor"
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  >
+                    <polyline points="2.5,8.5 6.5,12.5 13.5,4.5" />
+                  </svg>
+                </button>
                 <span className="flex-1 text-lg font-medium">
                   {item.qty > 1 && <span className="text-gray-500 mr-1">{item.qty}x</span>}
                   {item.product_name ?? item.free_text}
